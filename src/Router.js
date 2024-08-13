@@ -6,11 +6,12 @@ import Profile from "./views/User/Profile.vue";
 import ChangePassword from "./views/User/ChangePassword.vue";
 import Page404 from "./views/Page404.vue";
 import RestorePassword from "./views/User/RestorePassword.vue";
-import Page from "~/views/Page.vue";
+// import Page from "~/views/Page.vue";
+import Page3D from "./views/Page3D.vue";
 
 export default function createVueRouter(Store) {
     const routes = [
-        {path: '/', name: 'default', component: Page, meta: {noLoginRequired: true}},
+        {path: '/', name: 'default', component: Page3D, meta: {noLoginRequired: true}},
 
         {path: '/register', name: 'register', component: Registration, meta: {noLoginRequired: true}},
         {path: '/login', name: 'login', component: Login, meta: {noLoginRequired: true}},
@@ -42,14 +43,14 @@ export default function createVueRouter(Store) {
             name: 'profile',
         }
 
-        if (to.path === '/' || to.path === '') {
-            if (Store.state.user.isSignedIn) {
-                next(loginedRedirect);
-                return;
-            }
-            next(notLoginedRedirect);
-            return;
-        }
+        // if (to.path === '/' || to.path === '') {
+        //     if (Store.state.user.isSignedIn) {
+        //         next(loginedRedirect);
+        //         return;
+        //     }
+        //     next(notLoginedRedirect);
+        //     return;
+        // }
 
         // Login required redirects
         if (to.matched.some(record => record.meta.loginRequired === true || record.meta.adminRequired === true)) {
