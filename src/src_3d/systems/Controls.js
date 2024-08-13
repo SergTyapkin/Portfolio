@@ -1,5 +1,5 @@
 import {MathUtils, Vector3} from "three";
-import {BOX_HEIGHT, BOX_WIDTH, CAMERA_Z} from "../constants.js";
+import {BOX_HEIGHT, BOX_WIDTH, CAMERA_Z, CONTROLS_SAFE_ZONE_FACTOR} from "../constants.js";
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 
 
@@ -64,12 +64,18 @@ class MyControls {
 
   _onMouseMove() {
     return (event) => {
-      const totalWidth = visualViewport.width;
-      const totalHeight = visualViewport.height;
-      const curPosX = totalWidth - event.offsetX;
-      const curPosY = totalHeight - event.offsetY;
+      let totalWidth = visualViewport.width;
+      let totalHeight = visualViewport.height;
+      let safeZoneX = totalWidth * CONTROLS_SAFE_ZONE_FACTOR;
+      let safeZoneY = totalHeight * CONTROLS_SAFE_ZONE_FACTOR;
+      totalWidth -= safeZoneX * 2;
+      totalHeight -= safeZoneY * 2;
+      const curPosX = totalWidth - Math.max(event.offsetX - safeZoneX, 0);
+      const curPosY = totalHeight - Math.max(event.offsetY - safeZoneY, 0);
+      const percentX = Math.max(curPosX / totalWidth, 0);
+      const percentY = Math.max(curPosY / totalHeight, 0);
 
-      this._setTargetCameraPos(curPosX / totalWidth, curPosY / totalHeight);
+      this._setTargetCameraPos(percentX, percentY);
     }
   }
 

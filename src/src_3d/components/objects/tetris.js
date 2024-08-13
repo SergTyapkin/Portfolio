@@ -3,19 +3,71 @@ import {
   Float32BufferAttribute,
   Mesh,
   MeshBasicMaterial, MeshNormalMaterial,
-  MeshPhongMaterial,
+  MeshPhongMaterial, MeshPhysicalMaterial,
   Shape, ShapeGeometry, SphereGeometry,
   TextureLoader, Vector2,
 } from "three";
-import {BLOCK_DEPTH, BLOCK_SIDE, BOX_DEPTH} from "~/src_3d/constants";
+import {
+  BLOCK_DEPTH,
+  BLOCK_SIDE,
+  BOX_DEPTH,
+  BOX_HEIGHT,
+  BOX_WIDTH,
+  BEVEL_HEIGHT,
+  BEVEL_SIZE,
+  BEVEL_QUALITY,
+  ROUNDNESS_RADIUS,
+  ROUNDNESS_QUALITY,
+  THICKNESS,
+} from "~/src_3d/constants";
 
 
-const BEVEL_HEIGHT = 10;
-const BEVEL_SIZE = 10;
-const BEVEL_QUALITY = 10;
-const ROUNDNESS_RADIUS = 15;
-const ROUNDNESS_QUALITY = 5;
-const THICKNESS = 3;
+const WIREFRAMED = false;
+
+const TETRIS_CONFIG = [
+  { // left bottom Z
+    name: 'Some site 1',
+    contour: [[0, 0], [0, 2], [1, 2], [1, 3], [2, 3], [2, 1], [1, 1], [1, 0]],
+    color: 0xFF0055,
+    lightness: 2,
+  },
+  { // left Г
+    name: 'Some site 2',
+    contour: [[1, 0], [1, 1], [3, 1], [3, 2], [4, 2], [4, 0]],
+    color: 0xFF0055,
+    lightness: 2,
+  },
+  { // left square
+    name: 'Some site 3',
+    contour: [[2, 2], [2, 4], [4, 4], [4, 2]],
+    color: 0xFF0055,
+    lightness: 2,
+  },
+  { // left T
+    name: 'Some site 4',
+    contour: [[5, 0], [5, 3], [6, 3], [6, 2], [7, 2], [7, 1], [6, 1], [6, 0]],
+    color: 0xFF0055,
+    lightness: 2,
+  },
+  { // right L
+    name: 'Some site 5',
+    contour: [[6, 2], [6, 5], [7, 5], [7, 3], [8, 3], [8, 2]],
+    color: 0xFF0055,
+    lightness: 2,
+  },
+  { // right |
+    name: 'Some site 6',
+    contour: [[4, 0], [4, 4], [5, 4], [5, 0]],
+    color: 0xFF0055,
+    lightness: 2,
+  },
+  { // left top Z
+    name: 'Some site 7',
+    contour: [[0, 3], [0, 4], [1, 4], [1, 5], [3, 5], [3, 4], [2, 4], [2, 3]],
+    color: 0xFF0055,
+    lightness: 2,
+  },
+]
 
 
 function transformFacesToGeometry(facesCoordinates) {
@@ -72,18 +124,17 @@ function generateBevel(contour, bevelSize, bevelHeight, segments, startZ = 0, in
       let y2 = contourExt[i+1].y;
 
       // Find the normal in vertex
-      const toPrev = new Vector2(x1-x, y1-y);
+      const fromPrev = new Vector2(x-x1, y-y1);
       const toNext = new Vector2(x2-x, y2-y);
-      toPrev.normalize();
-      toNext.normalize();
-      const normal = toPrev.add(toNext);
+      const average = fromPrev.add(toNext).multiplyScalar(0.5);
+      const normal = new Vector2(-average.y, average.x)
       normal.normalize();
       // Find the bevel displacement for vertex
       let bevelFunc;
       const x0to1 = iter/(segments-1);
       if (toOut) {
         if (invertSide) {
-          bevelFunc = Math.sqrt(1 - (x0to1-1) ** 2); // /-
+          bevelFunc = Math.sqrt(1 - (x0to1-1) ** 2); // /-  (This is bevel form)
         } else {
           bevelFunc = 1 - Math.sqrt(1 - x0to1 ** 2); //  _/
         }
@@ -98,6 +149,9 @@ function generateBevel(contour, bevelSize, bevelHeight, segments, startZ = 0, in
       normal.multiplyScalar(displacement);
       x -= normal.x;
       y -= normal.y;
+      // if (y === 150) {
+      //   continue
+      // }
       vertices[iter].push({x, y, z});
     }
   }
@@ -151,7 +205,7 @@ function generateBevel(contour, bevelSize, bevelHeight, segments, startZ = 0, in
   return {faces, contour: lastContour.slice(0, lastContour.length-1)};
 }
 
-function generateExtrudedFaces(contour, extrudeHeight, startZ=0, invertNormals=false) {
+function generateExtrudedFaces(contour, extrudeHeight, startZ = 0, invertNormals = false) {
   const contourExt = contour.concat(contour[0]);
   const faces = [];
   for (let i = 1; i < contourExt.length; i++) {
@@ -188,34 +242,34 @@ function generateExtrudedFaces(contour, extrudeHeight, startZ=0, invertNormals=f
   return faces;
 }
 
-function generateBeveledShape(shape) {
+function generateBeveledGeometry(shape) {
   const contour = shape.extractPoints(ROUNDNESS_QUALITY).shape;
   const faces = [];
 
+  // Outer back bevel
+  const {faces: outerBackBevelFaces, contour: outerBackFaceVertices} = generateBevel(contour, BEVEL_SIZE, BEVEL_HEIGHT, BEVEL_QUALITY, 0, true);
+  faces.push(...outerBackBevelFaces);
+  // Outer back face
+  faces.push(...fillContourGetFaces(outerBackFaceVertices, BEVEL_HEIGHT, false));
+  // Outer side faces
+  faces.push(...generateExtrudedFaces(contour, -BLOCK_DEPTH + BEVEL_HEIGHT * 2, 0, true));
+  // Outer front bevel
+  const {faces: outerFrontBevelFaces, contour: outerFrontFaceVertices} = generateBevel(contour, BEVEL_SIZE, -BEVEL_HEIGHT, BEVEL_QUALITY, -BLOCK_DEPTH + BEVEL_HEIGHT * 2, false, false, false);
+  faces.push(...outerFrontBevelFaces);
+  // Inner front side faces
+  faces.push(...generateExtrudedFaces(outerFrontFaceVertices, THICKNESS, -BLOCK_DEPTH + BEVEL_HEIGHT, true));
+  // Inner front bevel
+  const {faces: innerFrontBevelFaces, contour: innerFrontFaceVertices} = generateBevel(outerFrontFaceVertices, BEVEL_SIZE - THICKNESS, BEVEL_HEIGHT - THICKNESS, BEVEL_QUALITY, -BLOCK_DEPTH + BEVEL_HEIGHT + THICKNESS, false, true, true);
+  faces.push(...innerFrontBevelFaces);
+  // Inner side faces
+  faces.push(...generateExtrudedFaces(innerFrontFaceVertices, BLOCK_DEPTH - BEVEL_HEIGHT * 2, -BLOCK_DEPTH + BEVEL_HEIGHT * 2, true));
   // Inner back bevel
-  const {faces: innerBackBevelFaces, contour: innerBackFaceVertices} = generateBevel(contour, BEVEL_SIZE, BEVEL_HEIGHT, BEVEL_QUALITY, 0);
+  const {faces: innerBackBevelFaces, contour: innerBackFaceVertices} = generateBevel(innerFrontFaceVertices, BEVEL_SIZE - THICKNESS, BEVEL_HEIGHT - THICKNESS, BEVEL_QUALITY, 0, false);
   faces.push(...innerBackBevelFaces);
-  // // Inner back face
-  // faces.push(...fillContourGetFaces(innerBackFaceVertices, BEVEL_HEIGHT, true));
-  // // Inner side faces
-  // faces.push(...generateExtrudedFaces(contour, -BLOCK_DEPTH + BEVEL_HEIGHT * 2));
-  // // Inner front bevel
-  // const {faces: innerFrontBevelFaces, contour: innerFrontFaceVertices} = generateBevel(contour, BEVEL_SIZE, -BEVEL_HEIGHT, BEVEL_QUALITY, -BLOCK_DEPTH + BEVEL_HEIGHT * 2, true);
-  // faces.push(...innerFrontBevelFaces);
-  // // Inner front side faces
-  // faces.push(...generateExtrudedFaces(innerFrontFaceVertices, -THICKNESS, -BLOCK_DEPTH + BEVEL_HEIGHT));
-  // // Outer front bevel
-  // const {faces: outerFrontBevelFaces, contour: outerFrontFaceVertices} = generateBevel(innerFrontFaceVertices, BEVEL_SIZE + THICKNESS, BEVEL_HEIGHT + THICKNESS, BEVEL_QUALITY, -BLOCK_DEPTH + BEVEL_HEIGHT - THICKNESS, true, true, true);
-  // faces.push(...outerFrontBevelFaces);
-  // // Outer side faces
-  // faces.push(...generateExtrudedFaces(outerFrontFaceVertices, BLOCK_DEPTH - BEVEL_HEIGHT * 2, -BLOCK_DEPTH + BEVEL_HEIGHT * 2));
-  // // Outer back bevel
-  // const {faces: outerBackBevelFaces, contour: outerBackFaceVertices} = generateBevel(outerFrontFaceVertices, BEVEL_SIZE + THICKNESS, BEVEL_HEIGHT + THICKNESS, BEVEL_QUALITY, 0, true);
-  // faces.push(...outerBackBevelFaces);
-  // // Outer back face
-  // faces.push(...fillContourGetFaces(outerBackFaceVertices, BEVEL_HEIGHT + THICKNESS));
+  // Inner back face
+  faces.push(...fillContourGetFaces(innerBackFaceVertices, BEVEL_HEIGHT - THICKNESS, true));
 
-  return transformFacesToGeometry(faces);
+  return {box: transformFacesToGeometry(faces), frontFace: generateExtrudedGeometry(outerFrontFaceVertices, THICKNESS)};
 }
 
 function generateShape(contour) {
@@ -226,39 +280,30 @@ function generateShape(contour) {
     const pointPrev = contourExt[i-1];
     const point = contourExt[i];
     const pointNext = contourExt[i+1];
-    console.log(pointPrev, point, pointNext);
     const pX = -point[0] * BLOCK_SIDE;
     const pY = point[1] * BLOCK_SIDE;
-    if (pointPrev[1] < point[1]) { // to Top
-      if (pointNext[0] > point[0]) {
-        console.log("top To Right")
+    if (pointPrev[1] < point[1]) { // from Top
+      if (pointNext[0] > point[0]) { // to right
         shape.absarc(pX - radius, pY - radius, radius,  0, Math.PI / 2, false);
-      } else if (pointNext[0] < point[0]) {
-        console.log("top To Left")
+      } else if (pointNext[0] < point[0]) { // to left
         shape.absarc(pX + radius, pY - radius, radius, Math.PI / 2, 0, true);
       }
-    } else if (pointPrev[0] < point[0]) { // to Right
-      if (pointNext[1] > point[1]) {
-        console.log("right To Top")
+    } else if (pointPrev[0] < point[0]) { // from Right
+      if (pointNext[1] > point[1]) { // to top
         shape.absarc(pX + radius, pY + radius, radius, Math.PI / 2 * 3, Math.PI, true);
-      } else if (pointNext[1] < point[1]) {
-        console.log("right To Bottom")
+      } else if (pointNext[1] < point[1]) { // to bottom
         shape.absarc(pX + radius, pY - radius, radius, Math.PI / 2, Math.PI, false);
       }
-    } else if (pointPrev[1] > point[1]) { // to Bottom
-      if (pointNext[0] > point[0]) {
-        console.log("bottom To Right")
+    } else if (pointPrev[1] > point[1]) { // from Bottom
+      if (pointNext[0] > point[0]) { // to right
         shape.absarc(pX - radius, pY + radius, radius, Math.PI / 2 * 4, Math.PI / 2 * 3, true);
-      } else if (pointNext[0] < point[0]) {
-        console.log("bottom To Left")
+      } else if (pointNext[0] < point[0]) { // to left
         shape.absarc(pX + radius, pY + radius, radius, Math.PI, Math.PI / 2 * 3, false);
       }
-    } else if (pointPrev[0] > point[0]) { // to Left
-      if (pointNext[1] > point[1]) {
-        console.log("left To Top")
+    } else if (pointPrev[0] > point[0]) { // from Left
+      if (pointNext[1] > point[1]) { // to top
         shape.absarc(pX - radius, pY + radius, radius, Math.PI / 2 * 3, Math.PI / 2 * 4, false);
-      } else if (pointNext[1] < point[1]) {
-        console.log("left To Bottom")
+      } else if (pointNext[1] < point[1]) { // to bottom
         shape.absarc(pX - radius, pY - radius, radius, Math.PI / 2, 0, true);
       }
     }
@@ -266,16 +311,20 @@ function generateShape(contour) {
   return shape;
 }
 
-export async function createTetris() {
-  const tetrisConfig = [
-    {
-      name: 'Some site 1',
-      contour: [[0, 0], [0, 2], [1, 2], [1, 3], [2, 3], [2, 1], [1, 1], [1, 0]],
-      color: 0xFF0055,
-      lightness: 2,
-    }
-  ]
+function generateExtrudedGeometry(contour, extrudeHeight) {
+  const faces = [];
 
+  // Back face
+  faces.push(...fillContourGetFaces(contour, 0, true));
+  // Side faces
+  faces.push(...generateExtrudedFaces(contour, extrudeHeight, 0, false));
+  // Front face
+  faces.push(...fillContourGetFaces(contour, extrudeHeight, false));
+
+  return transformFacesToGeometry(faces);
+}
+
+export async function createTetris() {
   // Create materials
   // const loader = new TextureLoader();
   // const textures = await Promise.all([
@@ -289,24 +338,37 @@ export async function createTetris() {
     color: 0x105942,
     shininess: 100,
   });
-  const mat3 = new MeshPhongMaterial({
+  const mat3 = new MeshPhysicalMaterial({
     color: 0xF05942,
-    shininess: 100,
+    transmission: 1,
+    roughness: 0,
   });
   const mat4 = new MeshNormalMaterial({
     // color: 0xF05942,
-    // wireframe: true,
+    wireframe: WIREFRAMED,
   });
 
   // Calculate all meshes coordinates by config
-  const shape = generateShape(tetrisConfig[0].contour);
-  const boxGeometry = generateBeveledShape(shape);
+  const totalMeshes = [];
+  TETRIS_CONFIG.forEach((blockConfig) => {
+    const shape = generateShape(blockConfig.contour);
+    const {box: boxGeometry, frontFace: frontFaceGeometry} = generateBeveledGeometry(shape);
+    const beveledMesh = new Mesh(boxGeometry, mat4);
+    // beveledMesh.position.z = -BEVEL_HEIGHT - THICKNESS + BLOCK_DEPTH + 50;
+    beveledMesh.position.z = -BEVEL_HEIGHT + BOX_DEPTH;
+    beveledMesh.position.y = -BOX_HEIGHT / 2 + THICKNESS;
+    beveledMesh.position.x = BOX_WIDTH / 2 - THICKNESS;
+    totalMeshes.push(beveledMesh);
 
-  const beveledCube = new Mesh(boxGeometry, mat4);
-  beveledCube.position.z = -BEVEL_HEIGHT - THICKNESS + BLOCK_DEPTH + 50;
+    const frontFaceMesh = new Mesh(frontFaceGeometry, mat3);
+    frontFaceMesh.position.z = 0;
+    frontFaceMesh.position.y = -BOX_HEIGHT / 2 + THICKNESS;
+    frontFaceMesh.position.x = BOX_WIDTH / 2 - THICKNESS;
+    totalMeshes.push(frontFaceMesh);
+  });
 
   const sphereGeo = new SphereGeometry(1, 5, 5);
   const centerSphere = new Mesh(sphereGeo, mat1);
 
-  return [centerSphere, beveledCube];
+  return [centerSphere, ...totalMeshes];
 }
