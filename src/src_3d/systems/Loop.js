@@ -9,6 +9,8 @@ class Loop {
     this.renderer = renderer;
     this.composer = composer;
     this.updatables = [];
+
+    this.composer.render();
   }
 
   start() {

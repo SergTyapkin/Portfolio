@@ -25,9 +25,7 @@ function isWebGL2Available() {
 
 export function createComposer(scene, camera) {
   const renderer = new WebGLRenderer({ antialias: true });
-  renderer.setClearColor(0x1f1e1c, 1)
-
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x555555);
   renderer.physicallyCorrectLights = true;
   renderer.shadowMap.enabled = true;
 
@@ -61,8 +59,6 @@ export function createComposer(scene, camera) {
   composer.addPass(FXAAPass);
   composer.addPass(bloomPass);
   // composer.addPass(filmPass);
-
-  composer.setSize(window.innerWidth, window.innerHeight);
 
   return {composer, renderer};
 }

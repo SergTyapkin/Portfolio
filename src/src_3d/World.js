@@ -57,6 +57,8 @@ export default class World {
     // scene.add(...models);
     scene.add(...objects);
     // scene.add(skybox);
+
+    resizer.update();
   }
 
   start() {

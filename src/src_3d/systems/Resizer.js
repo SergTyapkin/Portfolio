@@ -9,24 +9,33 @@ class Resizer {
     this.camera = camera;
     this.renderer = renderer;
     this.composer = composer;
-    window.addEventListener('resize', this.onResize());
-    this.onResize()();
+    window.addEventListener('resize', this._onResize());
+    this.update();
   }
 
   dispose() {
-    window.removeEventListener('resize', this.onResize());
+    window.removeEventListener('resize', this._onResize());
   }
 
-  onResize() {
+  update() {
+    this._onResize()();
+  }
+
+  _onResize() {
     return (event) => {
+      console.log(event)
       // set the size again if a resize occurs
-      this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
+      // const width = this.container.clientWidth;
+      // const height = this.container.clientHeight;
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
 
-      this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+      this.renderer.setSize(width, height);
       this.renderer.setPixelRatio(window.devicePixelRatio);
 
-      this.composer.setSize(this.container.clientWidth, this.container.clientHeight);
+      this.composer.setSize(width, height);
       this.composer.setPixelRatio(window.devicePixelRatio);
     }
   }

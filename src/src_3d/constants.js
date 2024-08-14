@@ -15,3 +15,6 @@ export const BLOCK_DEPTH = 150;
 export const BLOCK_SIDE = 50;
 
 export const CONTROLS_SAFE_ZONE_FACTOR = 0.15; // percent
+export const CONTROLS_SAFE_ZONE_ANGLE_VERTICAL = 60;
+export const CONTROLS_SAFE_ZONE_ANGLE_HORIZONTAL = 60;
+export const CONTROLS_VERTICAL_ANGLE_CENTER = 30;

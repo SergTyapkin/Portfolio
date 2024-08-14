@@ -1,6 +1,15 @@
 import {MathUtils, Vector2, Vector3} from "three";
-import {BOX_HEIGHT, BOX_WIDTH, CAMERA_Z, CONTROLS_SAFE_ZONE_FACTOR} from "../constants.js";
+import {
+  BOX_HEIGHT,
+  BOX_WIDTH,
+  CAMERA_Z,
+  CONTROLS_SAFE_ZONE_ANGLE_HORIZONTAL,
+  CONTROLS_SAFE_ZONE_ANGLE_VERTICAL,
+  CONTROLS_SAFE_ZONE_FACTOR,
+  CONTROLS_VERTICAL_ANGLE_CENTER
+} from "../constants.js";
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
+import {isMobile} from "~/utils/utils";
 
 
 const Y_MOVEMENT_AMPLITUDE = 20;
@@ -8,7 +17,6 @@ const SCROLL_SENSITIVE = 0.1;
 const DAMPING_FACTOR = 0.1;
 
 class MyControls {
-
   camera = undefined;
   canvas = undefined;
   target = new Vector3();
@@ -31,6 +39,8 @@ class MyControls {
 
   _dampingFactorDecreasingFactor = 1;
 
+  isMobile = isMobile();
+
 
   constructor(camera, canvas) {
     this.camera = camera;
@@ -41,9 +51,9 @@ class MyControls {
     this.camera.lookAt(this.target);
 
     window.addEventListener('mousemove', this._onMouseMove());
-    window.addEventListener('wheel', this._onScroll());
+    window.addEventListener('wheel', this._onScroll(), {passive: false});
     window.addEventListener('mouseout', this._onMouseOver());
-    window.removeEventListener('deviceorientation', this._onDeviceOrientation());
+    window.addEventListener('deviceorientation', this._onDeviceOrientation());
 
     this.camera.position.set(...this.targetCameraPos);
 
@@ -58,7 +68,12 @@ class MyControls {
 
   _onScroll() {
     return (event) => {
-      const newTargetCameraY = this.scrollPos.y + event.deltaY * SCROLL_SENSITIVE;
+      if (this.isMobile) {
+        return;
+      }
+      event.preventDefault();
+
+      const newTargetCameraY = this.scrollPos.y + -event.deltaY * SCROLL_SENSITIVE;
       const minY = this.minY + this.visibleScreenHeight / 2 + Y_MOVEMENT_AMPLITUDE / 2;
       const maxY = this.maxY - this.visibleScreenHeight / 2 - Y_MOVEMENT_AMPLITUDE / 2;
       if (newTargetCameraY > minY && newTargetCameraY < maxY) {
@@ -72,13 +87,18 @@ class MyControls {
     this.movementPos.x =
       this.minX + this.visibleScreenWidth / 2 +
       (this.maxX - this.minX - this.visibleScreenWidth) * percentX;
-    this.movementPos.y =
-      this.centerY - Y_MOVEMENT_AMPLITUDE / 2 +
-      Y_MOVEMENT_AMPLITUDE * percentY;
-    // // Without scrolling control
-    // this.movementPos.y =
-    //   this.minY + this.visibleScreenHeight / 2 +
-    //   (this.maxY - this.minY - this.visibleScreenHeight) * percentY;
+
+    if (!this.isMobile) {
+      // With scrolling control
+      this.movementPos.y =
+        this.centerY - Y_MOVEMENT_AMPLITUDE / 2 +
+        Y_MOVEMENT_AMPLITUDE * percentY;
+    } else {
+      // Without scrolling control
+      this.movementPos.y =
+        this.minY + this.visibleScreenHeight / 2 +
+        (this.maxY - this.minY - this.visibleScreenHeight) * percentY;
+    }
 
     this._dampingFactorDecreasingFactor = 1;
 
@@ -119,11 +139,14 @@ class MyControls {
 
   _onDeviceOrientation() {
     return (event) => {
-      let {absolute: alphaAbs, alpha: alphaX, beta: alphaY, gamma: alphaZ} = event;
-      alphaX = 90 + Math.min(Math.max(alphaX, -90), 90); // constrain the x rotation value to the range [0,180]
-      alphaY = 90 + Math.min(Math.max(alphaY, -90), 90); // constrain the y rotation value to the range [0,180]
+      let {absolute: alphaAbs, gamma: alphaX, beta: alphaY} = event;
+      const rangeY = 180 - CONTROLS_SAFE_ZONE_ANGLE_VERTICAL * 2;
+      const rangeX = 180 - CONTROLS_SAFE_ZONE_ANGLE_HORIZONTAL * 2;
+      alphaY -= CONTROLS_VERTICAL_ANGLE_CENTER;
+      alphaX = rangeY / 2 - Math.min(Math.max(alphaX, -90 + CONTROLS_SAFE_ZONE_ANGLE_HORIZONTAL), 90 - CONTROLS_SAFE_ZONE_ANGLE_HORIZONTAL); // constrain the x rotation value to the range [0,range]
+      alphaY = rangeX / 2 - Math.min(Math.max(alphaY, -90 + CONTROLS_SAFE_ZONE_ANGLE_VERTICAL), 90 - CONTROLS_SAFE_ZONE_ANGLE_VERTICAL); // constrain the y rotation value to the range [0,range]
 
-      this._setMovementPos(alphaX / 180, alphaY / 180);
+      this._setMovementPos(alphaX / rangeX, alphaY / rangeY);
     }
   }
 
