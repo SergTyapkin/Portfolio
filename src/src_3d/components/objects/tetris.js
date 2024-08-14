@@ -88,7 +88,7 @@ function generateBeveledGeometry(shape) {
   const {faces: outerBackBevelFaces, contour: outerBackFaceVertices} = generateBevel(contour, BEVEL_SIZE, BEVEL_HEIGHT, BEVEL_QUALITY, 0, true);
   faces.push(...outerBackBevelFaces);
   // Outer back face
-  faces.push(...fillContourGetFaces(outerBackFaceVertices, BEVEL_HEIGHT, false));
+  // faces.push(...fillContourGetFaces(outerBackFaceVertices, BEVEL_HEIGHT, false));
   // Outer side faces
   faces.push(...generateExtrudedFaces(contour, -BLOCK_DEPTH + BEVEL_HEIGHT * 2, 0, true));
   // Outer front bevel
@@ -152,12 +152,12 @@ function generateShape(contour) {
 function generateExtrudedGeometry(contour, extrudeHeight) {
   const faces = [];
 
-  // Back face
+  // Front face
   faces.push(...fillContourGetFaces(contour, 0, true));
   // Side faces
-  faces.push(...generateExtrudedFaces(contour, extrudeHeight, 0, false));
-  // Front face
-  faces.push(...fillContourGetFaces(contour, extrudeHeight, false));
+  // faces.push(...generateExtrudedFaces(contour, extrudeHeight, 0, false));
+  // Back face
+  // faces.push(...fillContourGetFaces(contour, extrudeHeight, false));
 
   return transformFacesToGeometry(faces);
 }
