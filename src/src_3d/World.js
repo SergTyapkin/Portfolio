@@ -5,7 +5,7 @@ import { createScene } from './components/scene.js';
 import { createObjects } from './components/objects/objects.js';
 
 import { createControls } from './systems/Controls.js';
-import { createRenderer } from './systems/Renderer.js';
+import {createComposer} from './systems/Renderer.js';
 import { Resizer } from './systems/Resizer.js';
 import { Loop } from './systems/Loop.js';
 import {BoxGeometry, BoxHelper, Mesh, SpotLightHelper} from "three";
@@ -15,6 +15,7 @@ import {createSkybox} from "./components/skybox.js";
 
 let camera;
 let controls;
+let composer;
 let renderer;
 let scene;
 let loop;
@@ -27,8 +28,10 @@ let resizer;
 class World {
   constructor(container) {
     camera = createCamera();
-    renderer = createRenderer();
     scene = createScene();
+    const composerAndRenderer = createComposer(scene, camera);
+    composer = composerAndRenderer.composer;
+    renderer = composerAndRenderer.renderer;
     controls = createControls(camera, renderer.domElement);
     loop = new Loop(camera, scene, renderer);
     lights = createLights();
@@ -38,7 +41,7 @@ class World {
     scene.add(...lights);
     // scene.add(new SpotLightHelper(lights[0]));
 
-    resizer = new Resizer(container, camera, renderer);
+    resizer = new Resizer(container, camera, composer);
   }
 
   async init() {
@@ -57,7 +60,8 @@ class World {
   }
 
   render() {
-    renderer.render(scene, camera);
+    // renderer.render(scene, camera);
+    composer.render();
   }
 
   start() {

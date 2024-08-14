@@ -1,9 +1,9 @@
 import {
-  BufferGeometry,
+  BufferGeometry, EquirectangularReflectionMapping,
   Float32BufferAttribute,
   Mesh,
   MeshBasicMaterial, MeshNormalMaterial,
-  MeshPhongMaterial, MeshPhysicalMaterial,
+  MeshPhongMaterial, MeshPhysicalMaterial, RepeatWrapping,
   Shape, ShapeGeometry, SphereGeometry,
   TextureLoader, Vector2,
 } from "three";
@@ -20,6 +20,9 @@ import {
   ROUNDNESS_QUALITY,
   THICKNESS,
 } from "~/src_3d/constants";
+import TEXTURE_NORMAL_MAP_ROUGH_MATERIAL_URL from '/res/images/normal_maps/rough_material.jpg';
+import TEXTURE_ENV_MAP_EMPTY_WAREHOUSE_URL from '/res/images/environment_maps/empty_warehouse.hdr';
+import {RGBELoader} from 'three/examples/jsm/loaders/RGBELoader';
 
 
 const WIREFRAMED = false;
@@ -75,6 +78,9 @@ function transformFacesToGeometry(facesCoordinates) {
   const geo = new BufferGeometry();
   geo.setAttribute('position', new Float32BufferAttribute(facesCoordinates, 3));
   geo.computeVertexNormals();
+  // geo.computeBoundingBox();
+  // geo.computeBoundingSphere();
+  // geo.computeTangents();
   return geo;
 }
 
@@ -326,10 +332,14 @@ function generateExtrudedGeometry(contour, extrudeHeight) {
 
 export async function createTetris() {
   // Create materials
-  // const loader = new TextureLoader();
-  // const textures = await Promise.all([
-  //   loader.loadAsync( './assets/skyboxes/lava/dn.jpg'),
-  // ]);
+  const loaderTexture = new TextureLoader();
+  const loaderRGBE = new RGBELoader();
+  const textureNormalMapRoughMaterial = await loaderTexture.loadAsync(TEXTURE_NORMAL_MAP_ROUGH_MATERIAL_URL);
+  textureNormalMapRoughMaterial.wrapS = RepeatWrapping;
+  textureNormalMapRoughMaterial.wrapT = RepeatWrapping;
+  textureNormalMapRoughMaterial.repeat.set(2, 2);
+  const textureEnvMapEmptyWarehouse = await loaderRGBE.loadAsync(TEXTURE_ENV_MAP_EMPTY_WAREHOUSE_URL);
+  textureEnvMapEmptyWarehouse.mapping = EquirectangularReflectionMapping;
 
   const mat1 = new MeshBasicMaterial({
     color: 0x000000,
@@ -339,10 +349,22 @@ export async function createTetris() {
     shininess: 100,
   });
   const mat3 = new MeshPhysicalMaterial({
-    color: 0xF05942,
+    color: 0xFF8888,
     transmission: 1,
-    roughness: 0,
+    roughness: 0.2,
+    // thickness: 7,
+    clearcoat: true,
+    // clearcoatRoughness: 0.1,
+    // ior: 1.5,
+    // envMap: textureEnvMapEmptyWarehouse,
+    // envMapIntensity: 1,
+    normalMap: textureNormalMapRoughMaterial,
+    clearcoatNormalMap: textureNormalMapRoughMaterial,
+    normalScale: new Vector2(10, 10),
+    clearcoatNormalScale: new Vector2(10, 10),
   });
+
+
   const mat4 = new MeshNormalMaterial({
     // color: 0xF05942,
     wireframe: WIREFRAMED,
