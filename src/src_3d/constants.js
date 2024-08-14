@@ -2,9 +2,9 @@ export const CAMERA_Z = -100;
 
 export const BEVEL_HEIGHT = 10;
 export const BEVEL_SIZE = 10;
-export const BEVEL_QUALITY = 10; // 10
+export const BEVEL_QUALITY = 30; // 10
 export const ROUNDNESS_RADIUS = 15;
-export const ROUNDNESS_QUALITY = 5; // 5
+export const ROUNDNESS_QUALITY = 12; // 5
 export const THICKNESS = 3;
 
 export const BOX_WIDTH = 400 + THICKNESS;

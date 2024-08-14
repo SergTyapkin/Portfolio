@@ -108,13 +108,13 @@ class MyControls {
 }
 
 function createControls(camera, canvas) {
-  // const controls = new MyControls(camera, canvas);
-  // controls.init();
-  const controls = new OrbitControls(camera, canvas);
-  controls.tick = () => {
-    controls.update();
-  }
-  controls.enableDamping = true;
+  const controls = new MyControls(camera, canvas);
+  controls.init();
+  // const controls = new OrbitControls(camera, canvas);
+  // controls.tick = () => {
+  //   controls.update();
+  // }
+  // controls.enableDamping = true;
   return controls;
 }
 

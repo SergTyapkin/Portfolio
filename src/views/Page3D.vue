@@ -13,28 +13,30 @@
 
 
 <script>
-import {World} from "~/src_3d/World";
+import World from "~/src_3d/World";
 
 export default {
   components: {},
 
   data() {
     return {
+      world: undefined,
     }
   },
 
   async mounted() {
-    // Get a reference to the container element
-    const container = this.$refs.rootThree3d;
-
     // create a new world
-    const world = new World(container);
+    this.world = new World(this.$refs.rootThree3d);
 
     // complete async tasks
-    await world.init();
+    await this.world.init();
 
     // start the animation loop
-    world.start();
+    this.world.start();
+  },
+
+  unmounted() {
+    this.world.dispose();
   },
 
   methods: {

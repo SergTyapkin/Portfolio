@@ -19,13 +19,13 @@ let composer;
 let renderer;
 let scene;
 let loop;
-let lights;
-let models;
+let lights = [];
+let models = [];
 let skybox;
-let objects;
+let objects = [];
 let resizer;
 
-class World {
+export default class World {
   constructor(container) {
     camera = createCamera();
     scene = createScene();
@@ -33,7 +33,7 @@ class World {
     composer = composerAndRenderer.composer;
     renderer = composerAndRenderer.renderer;
     controls = createControls(camera, renderer.domElement);
-    loop = new Loop(camera, scene, renderer);
+    loop = new Loop(camera, scene, renderer, composer);
     lights = createLights();
 
     container.append(renderer.domElement);
@@ -59,11 +59,6 @@ class World {
     // scene.add(skybox);
   }
 
-  render() {
-    // renderer.render(scene, camera);
-    composer.render();
-  }
-
   start() {
     loop.start();
   }
@@ -71,6 +66,19 @@ class World {
   stop() {
     loop.stop();
   }
-}
 
-export { World };
+  dispose() {
+    this.stop();
+    // camera.dispose();
+    controls.dispose();
+    composer.dispose();
+    renderer.dispose();
+    // scene.dispose();
+    // lights.forEach(l => l.dispose());
+    models.forEach(m => m.dispose());
+    // objects.forEach(o => o.dispose());
+    // skybox.dispose();
+    // resizer.dispose();
+    renderer.domElement.remove();
+  }
+}

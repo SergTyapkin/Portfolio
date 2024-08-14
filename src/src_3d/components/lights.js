@@ -4,7 +4,7 @@ function createLights() {
   const ambientLight = new HemisphereLight(
     0xFFEEBB,
     0x134050,
-    3,
+    2,
   );
 
   const light = new DirectionalLight(0xFFFFEE, 4);
