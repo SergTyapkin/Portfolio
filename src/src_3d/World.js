@@ -41,7 +41,7 @@ export default class World {
     scene.add(...lights);
     // scene.add(new SpotLightHelper(lights[0]));
 
-    resizer = new Resizer(container, camera, composer);
+    resizer = new Resizer(container, camera, renderer, composer);
   }
 
   async init() {
@@ -78,7 +78,7 @@ export default class World {
     models.forEach(m => m.dispose());
     // objects.forEach(o => o.dispose());
     // skybox.dispose();
-    // resizer.dispose();
+    resizer.dispose();
     renderer.domElement.remove();
   }
 }

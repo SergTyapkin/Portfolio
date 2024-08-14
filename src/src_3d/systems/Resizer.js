@@ -1,25 +1,37 @@
-const setSize = (container, camera, renderer) => {
-  camera.aspect = container.clientWidth / container.clientHeight;
-  camera.updateProjectionMatrix();
-
-  renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setPixelRatio(window.devicePixelRatio);
-};
-
 class Resizer {
-  constructor(container, camera, renderer) {
-    // set initial size
-    setSize(container, camera, renderer);
+  container = undefined;
+  camera = undefined;
+  renderer = undefined;
+  composer = undefined;
 
-    window.addEventListener('resize', () => {
-      // set the size again if a resize occurs
-      setSize(container, camera, renderer);
-      // perform any custom actions
-      this.onResize();
-    });
+  constructor(container, camera, renderer, composer) {
+    this.container = container;
+    this.camera = camera;
+    this.renderer = renderer;
+    this.composer = composer;
+    window.addEventListener('resize', this.onResize());
+    this.onResize()();
   }
 
-  onResize({ canvas, pixelRatio, viewportWidth, viewportHeight }) {
+  dispose() {
+    window.removeEventListener('resize', this.onResize());
+  }
+
+  onResize() {
+    return (event) => {
+      // set the size again if a resize occurs
+      this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
+      this.camera.updateProjectionMatrix();
+
+      this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+      this.renderer.setPixelRatio(window.devicePixelRatio);
+
+      this.composer.setSize(this.container.clientWidth, this.container.clientHeight);
+      this.composer.setPixelRatio(window.devicePixelRatio);
+    }
+  }
+
+  // onResize({ canvas, pixelRatio, viewportWidth, viewportHeight }) {
     // const dpr = Math.min(pixelRatio, 2); // Cap DPR scaling to 2x
     //
     // canvas.width = viewportWidth * dpr;
@@ -37,7 +49,7 @@ class Resizer {
     //
     // camera.aspect = viewportWidth / viewportHeight;
     // camera.updateProjectionMatrix();
-  }
+  // }
 }
 
 export { Resizer };

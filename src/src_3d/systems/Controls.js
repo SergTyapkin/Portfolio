@@ -27,6 +27,8 @@ class MyControls {
   movementPos = new Vector2(this.centerX, this.centerY);
   targetCameraPos = new Vector3(this.centerX, this.centerY, CAMERA_Z);
 
+  cameraVerticalFov = undefined;
+
   _dampingFactorDecreasingFactor = 1;
 
 
@@ -45,9 +47,7 @@ class MyControls {
 
     this.camera.position.set(...this.targetCameraPos);
 
-    const cameraVerticalFov = MathUtils.degToRad(this.camera.fov);
-    this.visibleScreenHeight = 2 * Math.tan(cameraVerticalFov / 2) * Math.abs(CAMERA_Z);
-    this.visibleScreenWidth = this.visibleScreenHeight * this.camera.aspect;
+    this.cameraVerticalFov = MathUtils.degToRad(this.camera.fov);
   }
 
   dispose() {
@@ -75,6 +75,7 @@ class MyControls {
     this.movementPos.y =
       this.centerY - Y_MOVEMENT_AMPLITUDE / 2 +
       Y_MOVEMENT_AMPLITUDE * percentY;
+    // // Without scrolling control
     // this.movementPos.y =
     //   this.minY + this.visibleScreenHeight / 2 +
     //   (this.maxY - this.minY - this.visibleScreenHeight) * percentY;
@@ -85,6 +86,9 @@ class MyControls {
   }
 
   _updateTargetCameraPos() {
+    this.visibleScreenHeight = 2 * Math.tan(this.cameraVerticalFov / 2) * Math.abs(CAMERA_Z);
+    this.visibleScreenWidth = this.visibleScreenHeight * this.camera.aspect;
+
     this.targetCameraPos.x = this.movementPos.x;
     this.targetCameraPos.y = this.movementPos.y + this.scrollPos.y;
   }
