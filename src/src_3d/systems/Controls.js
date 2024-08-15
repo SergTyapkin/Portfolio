@@ -76,9 +76,7 @@ class MyControls {
       const newTargetCameraY = this.scrollPos.y + -event.deltaY * SCROLL_SENSITIVE;
       const minY = this.minY + this.visibleScreenHeight / 2 + Y_MOVEMENT_AMPLITUDE / 2;
       const maxY = this.maxY - this.visibleScreenHeight / 2 - Y_MOVEMENT_AMPLITUDE / 2;
-      if (newTargetCameraY > minY && newTargetCameraY < maxY) {
-        this.scrollPos.y = newTargetCameraY;
-      }
+      this.scrollPos.y = Math.min(Math.max(newTargetCameraY, minY), maxY);
       this._updateTargetCameraPos();
     }
   }
