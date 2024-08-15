@@ -156,6 +156,7 @@ class MyControls {
     const displacement = diffToTarget.multiplyScalar(DAMPING_FACTOR * this._dampingFactorDecreasingFactor);
     const resultPos = currentPos.add(displacement);
     this.camera.position.set(...resultPos);
+    this.camera.lookAt(new Vector3(this.camera.position.x * 0.8, this.camera.position.y * 0.8, 0));
   }
 }
 
