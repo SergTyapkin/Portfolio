@@ -52,6 +52,7 @@ export default class World {
     //   return Math.min(min, -cur.size.y / 2);
     // }, -models[0].size.y / 2);
     objects = await createObjects();
+    loop.push(...objects);
     // skybox = await createSkybox();
 
     // scene.add(...models);

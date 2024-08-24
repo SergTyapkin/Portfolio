@@ -10,6 +10,9 @@ export async function createObjects() {
   ).map((obj) => {
     obj.receiveShadow = true;
     obj.castShadow = true;
+    if (obj.tick === undefined) {
+      obj.tick = () => {};
+    }
     return updateSize(obj);
   });
 }

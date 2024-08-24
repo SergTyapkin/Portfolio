@@ -19,6 +19,7 @@ import {
   ROUNDNESS_RADIUS,
   ROUNDNESS_QUALITY,
   THICKNESS,
+  // IMPORT MOTION PARAMS
 } from "~/src_3d/constants";
 import TEXTURE_NORMAL_MAP_ROUGH_MATERIAL_URL from '/res/images/normal_maps/rough_material.jpg';
 import TEXTURE_ENV_MAP_EMPTY_WAREHOUSE_URL from '/res/images/environment_maps/empty_warehouse.hdr';
@@ -160,6 +161,18 @@ function generateExtrudedGeometry(contour, extrudeHeight) {
   // faces.push(...fillContourGetFaces(contour, extrudeHeight, false));
 
   return transformFacesToGeometry(faces);
+}
+
+function addTickMotionFunctionOnObject(obj) {
+  const amplitude = 10;
+  const offset = 0;
+  const speed = 1.0;
+  const startZ = obj.position.z + offset;
+  obj.timeTotal = 0;
+  obj.tick = (timeDelta) => {
+    obj.timeTotal += timeDelta;
+    obj.position.z = startZ + Math.sin(obj.timeTotal / Math.PI * speed) + amplitude;
+  };
 }
 
 export async function createTetris() {
