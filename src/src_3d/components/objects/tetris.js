@@ -163,16 +163,20 @@ function generateExtrudedGeometry(contour, extrudeHeight) {
   return transformFacesToGeometry(faces);
 }
 
-function addTickMotionFunctionOnObject(obj) {
+function addTickMotionFunctionOnObjects(...objects) {
   const amplitude = 10;
   const offset = 0;
   const speed = 1.0;
   const startZ = obj.position.z + offset;
-  obj.timeTotal = 0;
-  obj.tick = (timeDelta) => {
+  
+  const tickFunction = (timeDelta) => {
     obj.timeTotal += timeDelta;
     obj.position.z = startZ + Math.sin(obj.timeTotal / Math.PI * speed) + amplitude;
   };
+  objects.forEach(obj => {
+    obj.timeTotal = 0;
+    obj.tick = (timeDelta) => tickFunction.call(obj, timeDelta);
+  });
 }
 
 export async function createTetris() {
@@ -241,6 +245,8 @@ export async function createTetris() {
     frontFaceMesh.position.y = -BOX_HEIGHT / 2 + THICKNESS;
     frontFaceMesh.position.x = BOX_WIDTH / 2 - THICKNESS;
     totalMeshes.push(frontFaceMesh);
+    
+    addTickMotionFunctionOnObjects(beveledMesh, frontFaceMesh);
   });
 
   const sphereGeo = new SphereGeometry(1, 5, 5);
