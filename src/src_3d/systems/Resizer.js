@@ -23,7 +23,6 @@ class Resizer {
 
   _onResize() {
     return (event) => {
-      console.log(event)
       // set the size again if a resize occurs
       // const width = this.container.clientWidth;
       // const height = this.container.clientHeight;

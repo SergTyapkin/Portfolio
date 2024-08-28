@@ -8,8 +8,8 @@ export async function createObjects() {
   ).concat(
     await createTetris()
   ).map((obj) => {
-    obj.receiveShadow = true;
-    obj.castShadow = true;
+    // obj.receiveShadow = true;
+    // obj.castShadow = true;
     if (obj.tick === undefined) {
       obj.tick = () => {};
     }

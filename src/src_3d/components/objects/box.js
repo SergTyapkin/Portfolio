@@ -11,8 +11,8 @@ import {BOX_DEPTH, BOX_HEIGHT, BOX_WIDTH} from "~/src_3d/constants";
 export async function createBox() {
   // Create materials
   const mat1 = new MeshPhongMaterial({
-    color: 0x105942,
-    shininess: 100,
+    color: 0x333,
+    shininess: 10,
   });
 
   // Create meshes

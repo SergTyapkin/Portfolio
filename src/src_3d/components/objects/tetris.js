@@ -10,7 +10,6 @@ import {
 import {
   BLOCK_DEPTH,
   BLOCK_SIDE,
-  BOX_DEPTH,
   BOX_HEIGHT,
   BOX_WIDTH,
   BEVEL_HEIGHT,
@@ -19,6 +18,11 @@ import {
   ROUNDNESS_RADIUS,
   ROUNDNESS_QUALITY,
   THICKNESS,
+  MOTION_AMPLITUDE_RANGE_MIN,
+  MOTION_AMPLITUDE_RANGE_MAX,
+  MOTION_OFFSET_RANGE_MIN,
+  MOTION_SPEED_RANGE_MIN,
+  MOTION_SPEED_RANGE_MAX, MOTION_OFFSET_RANGE_MAX,
   // IMPORT MOTION PARAMS
 } from "~/src_3d/constants";
 import TEXTURE_NORMAL_MAP_ROUGH_MATERIAL_URL from '/res/images/normal_maps/rough_material.jpg';
@@ -32,6 +36,7 @@ import {
   generateExtrudedFaces,
   transformFacesToGeometry
 } from "~/src_3d/components/objects/geometryUtils";
+import {randomBetween} from "~/utils/utils";
 
 
 const WIREFRAMED = false;
@@ -164,18 +169,20 @@ function generateExtrudedGeometry(contour, extrudeHeight) {
 }
 
 function addTickMotionFunctionOnObjects(...objects) {
-  const amplitude = 10;
-  const offset = 0;
-  const speed = 1.0;
-  const startZ = obj.position.z + offset;
-  
-  const tickFunction = (timeDelta) => {
-    obj.timeTotal += timeDelta;
-    obj.position.z = startZ + Math.sin(obj.timeTotal / Math.PI * speed) + amplitude;
-  };
+  const amplitude = randomBetween(MOTION_AMPLITUDE_RANGE_MIN, MOTION_AMPLITUDE_RANGE_MAX);
+  const offset = randomBetween(MOTION_OFFSET_RANGE_MIN, MOTION_OFFSET_RANGE_MAX);
+  const speed = randomBetween(MOTION_SPEED_RANGE_MIN, MOTION_SPEED_RANGE_MAX);
+  const phase = randomBetween(0, Math.PI * 2);
+
+  function tickFunction(timeDelta, startZ, offset, amplitude, phase) {
+    this.timeTotal += timeDelta;
+    this.position.z = startZ - amplitude / 2 + Math.sin(this.timeTotal / Math.PI * speed + phase) * amplitude;
+  }
+
   objects.forEach(obj => {
     obj.timeTotal = 0;
-    obj.tick = (timeDelta) => tickFunction.call(obj, timeDelta);
+    const startZ = obj.position.z + offset;
+    obj.tick = (timeDelta) => tickFunction.call(obj, timeDelta, startZ, offset, amplitude, phase);
   });
 }
 
@@ -200,7 +207,7 @@ export async function createTetris() {
   const mat3 = new MeshPhysicalMaterial({
     // color: 0xFF8888,
     transmission: 1,
-    roughness: 0.1,
+    roughness: 0.3,
     thickness: 3,
     clearcoat: true,
     clearcoatRoughness: 0.5,
@@ -228,7 +235,7 @@ export async function createTetris() {
     const shape = generateShape(blockConfig.contour);
     const {box: boxGeometry, frontFace: frontFaceGeometry} = generateBeveledGeometry(shape);
     const beveledMesh = new Mesh(boxGeometry, mat4);
-    beveledMesh.position.z = -BEVEL_HEIGHT + BOX_DEPTH;
+    beveledMesh.position.z = -BEVEL_HEIGHT + BLOCK_DEPTH;
     beveledMesh.position.y = -BOX_HEIGHT / 2 + THICKNESS;
     beveledMesh.position.x = BOX_WIDTH / 2 - THICKNESS;
     totalMeshes.push(beveledMesh);
@@ -245,7 +252,7 @@ export async function createTetris() {
     frontFaceMesh.position.y = -BOX_HEIGHT / 2 + THICKNESS;
     frontFaceMesh.position.x = BOX_WIDTH / 2 - THICKNESS;
     totalMeshes.push(frontFaceMesh);
-    
+
     addTickMotionFunctionOnObjects(beveledMesh, frontFaceMesh);
   });
 

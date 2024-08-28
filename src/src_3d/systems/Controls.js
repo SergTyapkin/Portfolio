@@ -15,6 +15,7 @@ import {isMobile} from "~/utils/utils";
 const Y_MOVEMENT_AMPLITUDE = 20;
 const SCROLL_SENSITIVE = 0.1;
 const DAMPING_FACTOR = 0.1;
+const DAMPING_FACTOR_DECREASING_ON_MOUSEOVER = 5;
 
 class MyControls {
   camera = undefined;
@@ -58,6 +59,7 @@ class MyControls {
     this.camera.position.set(...this.targetCameraPos);
 
     this.cameraVerticalFov = MathUtils.degToRad(this.camera.fov);
+    this._updateVisibleScreenSize();
   }
 
   dispose() {
@@ -103,9 +105,13 @@ class MyControls {
     this._updateTargetCameraPos();
   }
 
-  _updateTargetCameraPos() {
+  _updateVisibleScreenSize() {
     this.visibleScreenHeight = 2 * Math.tan(this.cameraVerticalFov / 2) * Math.abs(CAMERA_Z);
     this.visibleScreenWidth = this.visibleScreenHeight * this.camera.aspect;
+  }
+
+  _updateTargetCameraPos() {
+    this._updateVisibleScreenSize();
 
     this.targetCameraPos.x = this.movementPos.x;
     this.targetCameraPos.y = this.movementPos.y + this.scrollPos.y;
@@ -131,7 +137,7 @@ class MyControls {
   _onMouseOver() {
     return (event) => {
       this.targetCameraPos.set(this.centerX, this.centerY, CAMERA_Z);
-      this._dampingFactorDecreasingFactor = 0.2;
+      this._dampingFactorDecreasingFactor = 1 / DAMPING_FACTOR_DECREASING_ON_MOUSEOVER;
     }
   }
 
@@ -151,12 +157,14 @@ class MyControls {
 
   tick() {
     const currentPos = new Vector3(...this.camera.position);
-    const targetPos = new Vector3(...this.targetCameraPos);
+    // const targetPos = new Vector3(...this.targetCameraPos);
+    const targetPos = new Vector3(this.targetCameraPos.x * 1.5, this.targetCameraPos.y * 1.5, this.targetCameraPos.z);
     const diffToTarget = targetPos.sub(currentPos);
     const displacement = diffToTarget.multiplyScalar(DAMPING_FACTOR * this._dampingFactorDecreasingFactor);
     const resultPos = currentPos.add(displacement);
     this.camera.position.set(...resultPos);
     this.camera.lookAt(new Vector3(this.camera.position.x * 0.8, this.camera.position.y * 0.8, 0));
+    // this.camera.lookAt(new Vector3(this.camera.position.x, this.camera.position.y, 0));
   }
 }
 
