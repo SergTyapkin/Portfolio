@@ -1,10 +1,9 @@
 import {
-  BufferGeometry, EquirectangularReflectionMapping,
-  Float32BufferAttribute,
+  EquirectangularReflectionMapping,
   Mesh,
   MeshBasicMaterial, MeshNormalMaterial,
   MeshPhongMaterial, MeshPhysicalMaterial, RepeatWrapping,
-  Shape, ShapeGeometry, SphereGeometry,
+  Shape, SphereGeometry,
   TextureLoader, Vector2,
 } from "three";
 import {
@@ -23,23 +22,23 @@ import {
   MOTION_OFFSET_RANGE_MIN,
   MOTION_SPEED_RANGE_MIN,
   MOTION_SPEED_RANGE_MAX, MOTION_OFFSET_RANGE_MAX,
-  // IMPORT MOTION PARAMS
 } from "~/src_3d/constants";
 import TEXTURE_NORMAL_MAP_ROUGH_MATERIAL_URL from '/res/images/normal_maps/rough_material.jpg';
 import TEXTURE_ENV_MAP_EMPTY_WAREHOUSE_URL from '/res/images/environment_maps/empty_warehouse.hdr';
 import {RGBELoader} from 'three/examples/jsm/loaders/RGBELoader';
-import {RoundedBoxGeometry} from "three/examples/jsm/geometries/RoundedBoxGeometry";
 import {
   computeUVs,
   fillContourGetFaces,
   generateBevel,
   generateExtrudedFaces,
   transformFacesToGeometry
-} from "~/src_3d/components/objects/geometryUtils";
+} from "~/src_3d/geometryUtils";
 import {randomBetween} from "~/utils/utils";
 
 
 const WIREFRAMED = false;
+const NORMAL_MAP_REPEAT = 6;
+
 
 const TETRIS_CONFIG = [
   { // left bottom Z
@@ -243,7 +242,7 @@ export async function createTetris() {
     const uvRepeat = computeUVs(frontFaceGeometry);
     const curMat = mat3.clone();
     curMat.normalMap = mat3.normalMap.clone();
-    curMat.normalMap.repeat.set(uvRepeat[0] * 2, uvRepeat[1] * 2);
+    curMat.normalMap.repeat.set(uvRepeat[0] * NORMAL_MAP_REPEAT, uvRepeat[1] * NORMAL_MAP_REPEAT);
     curMat.normalMap.needsUpdate = true;
 
     const frontFaceMesh = new Mesh(frontFaceGeometry, curMat);

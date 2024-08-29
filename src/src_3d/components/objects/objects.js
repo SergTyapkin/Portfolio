@@ -1,6 +1,6 @@
 import {updateSize} from "~/src_3d/components/models/setupModel";
 import {createBox} from "./box.js";
-import {createTetris} from "./tetris.js";
+import {createTetris} from "./tetrisObjects";
 
 export async function createObjects() {
   return (
