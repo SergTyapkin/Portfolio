@@ -206,7 +206,7 @@ export async function createTetris() {
   const mat3 = new MeshPhysicalMaterial({
     // color: 0xFF8888,
     transmission: 1,
-    roughness: 0.3,
+    roughness: 0.2,
     thickness: 3,
     clearcoat: true,
     clearcoatRoughness: 0.5,
