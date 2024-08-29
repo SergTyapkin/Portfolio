@@ -146,14 +146,9 @@ class MyControls {
     const rangeX = 180 - CONTROLS_SAFE_ZONE_ANGLE_HORIZONTAL * 2;
     return (event) => {
       let {absolute: alphaAbs, gamma: alphaX, beta: alphaY} = event;
-      console.log("-------------");
-      console.log("RANGE", rangeY, rangeX);
       alphaY -= CONTROLS_VERTICAL_ANGLE_CENTER;
-      console.log("ANGLE", alphaX, alphaY);
       alphaX = rangeX / 2 - Math.min(Math.max(alphaX, -90 + CONTROLS_SAFE_ZONE_ANGLE_HORIZONTAL), 90 - CONTROLS_SAFE_ZONE_ANGLE_HORIZONTAL); // constrain the x rotation value to the range [0,range]
       alphaY = rangeY / 2 - Math.min(Math.max(alphaY, -90 + CONTROLS_SAFE_ZONE_ANGLE_VERTICAL), 90 - CONTROLS_SAFE_ZONE_ANGLE_VERTICAL); // constrain the y rotation value to the range [0,range]
-      console.log("ALPHA", alphaX, alphaY);
-      console.log("PERC", alphaX / rangeX, alphaY / rangeY);
 
       this._setMovementPos(alphaX / rangeX, alphaY / rangeY);
     }

@@ -11,6 +11,7 @@ import { Loop } from './systems/Loop.js';
 import {BoxGeometry, BoxHelper, Mesh, SpotLightHelper} from "three";
 import {updateSize} from "./components/models/setupModel.js";
 import {createSkybox} from "./components/skybox.js";
+import AssetsTrackerLoader from "~/src_3d/AssetsTrackerLoader";
 
 
 let camera;
@@ -83,5 +84,7 @@ export default class World {
     // skybox.dispose();
     resizer.dispose();
     renderer.domElement.remove();
+
+    AssetsTrackerLoader.disposeAll();
   }
 }

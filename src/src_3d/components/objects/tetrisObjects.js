@@ -34,6 +34,7 @@ import {
   transformFacesToGeometry
 } from "~/src_3d/geometryUtils";
 import {randomBetween} from "~/utils/utils";
+import {Load, Track} from "~/src_3d/AssetsTrackerLoader";
 
 
 const WIREFRAMED = false;
@@ -112,7 +113,7 @@ function generateBeveledGeometry(shape) {
   // Inner back face
   faces.push(...fillContourGetFaces(innerBackFaceVertices, BEVEL_HEIGHT - THICKNESS, true));
 
-  return {box: transformFacesToGeometry(faces), frontFace: generateExtrudedGeometry(outerFrontFaceVertices, THICKNESS)};
+  return {box: transformFacesToGeometry(faces), frontFace: generateFillContourGeometry(outerFrontFaceVertices)};
 }
 
 function generateShape(contour) {
@@ -160,10 +161,15 @@ function generateExtrudedGeometry(contour, extrudeHeight) {
   // Front face
   faces.push(...fillContourGetFaces(contour, 0, true));
   // Side faces
-  // faces.push(...generateExtrudedFaces(contour, extrudeHeight, 0, false));
+  faces.push(...generateExtrudedFaces(contour, extrudeHeight, 0, false));
   // Back face
-  // faces.push(...fillContourGetFaces(contour, extrudeHeight, false));
+  faces.push(...fillContourGetFaces(contour, extrudeHeight, false));
 
+  return transformFacesToGeometry(faces);
+}
+
+function generateFillContourGeometry(contour) {
+  const faces = fillContourGetFaces(contour, 0, true);
   return transformFacesToGeometry(faces);
 }
 
@@ -187,23 +193,22 @@ function addTickMotionFunctionOnObjects(...objects) {
 
 export async function createTetris() {
   // Create materials
-  const loaderTexture = new TextureLoader();
-  const loaderRGBE = new RGBELoader();
-  const textureNormalMapRoughMaterial = await loaderTexture.loadAsync(TEXTURE_NORMAL_MAP_ROUGH_MATERIAL_URL);
+  const [textureNormalMapRoughMaterial, textureEnvMapEmptyWarehouse] = await Promise.all([
+    Load(TextureLoader, TEXTURE_NORMAL_MAP_ROUGH_MATERIAL_URL),
+    Load(RGBELoader, TEXTURE_ENV_MAP_EMPTY_WAREHOUSE_URL),
+  ]);
   textureNormalMapRoughMaterial.wrapS = RepeatWrapping;
   textureNormalMapRoughMaterial.wrapT = RepeatWrapping;
-  // textureNormalMapRoughMaterial.repeat.set(1, 6);
-  const textureEnvMapEmptyWarehouse = await loaderRGBE.loadAsync(TEXTURE_ENV_MAP_EMPTY_WAREHOUSE_URL);
   textureEnvMapEmptyWarehouse.mapping = EquirectangularReflectionMapping;
 
-  const mat1 = new MeshBasicMaterial({
+  const mat1 = Track(new MeshBasicMaterial({
     color: 0x000000,
-  });
-  const mat2 = new MeshPhongMaterial({
+  }));
+  const mat2 = Track(new MeshPhongMaterial({
     color: 0x105942,
     shininess: 100,
-  });
-  const mat3 = new MeshPhysicalMaterial({
+  }));
+  const mat3 = Track(new MeshPhysicalMaterial({
     // color: 0xFF8888,
     transmission: 1,
     roughness: 0.2,
@@ -220,32 +225,34 @@ export async function createTetris() {
     clearcoatNormalMap: textureNormalMapRoughMaterial,
     normalScale: new Vector2(.2, .2),
     clearcoatNormalScale: new Vector2(10, 10),
-  });
+  }));
 
 
-  const mat4 = new MeshNormalMaterial({
+  const mat4 = Track(new MeshNormalMaterial({
     // color: 0xF05942,
     wireframe: WIREFRAMED,
-  });
+  }));
 
   // Calculate all meshes coordinates by config
   const totalMeshes = [];
   TETRIS_CONFIG.forEach((blockConfig) => {
     const shape = generateShape(blockConfig.contour);
     const {box: boxGeometry, frontFace: frontFaceGeometry} = generateBeveledGeometry(shape);
-    const beveledMesh = new Mesh(boxGeometry, mat4);
+    Track(boxGeometry);
+    Track(frontFaceGeometry);
+    const beveledMesh = Track(new Mesh(boxGeometry, mat4));
     beveledMesh.position.z = -BEVEL_HEIGHT + BLOCK_DEPTH;
     beveledMesh.position.y = -BOX_HEIGHT / 2 + THICKNESS;
     beveledMesh.position.x = BOX_WIDTH / 2 - THICKNESS;
     totalMeshes.push(beveledMesh);
 
     const uvRepeat = computeUVs(frontFaceGeometry);
-    const curMat = mat3.clone();
-    curMat.normalMap = mat3.normalMap.clone();
+    const curMat = Track(mat3.clone());
+    curMat.normalMap = Track(mat3.normalMap.clone());
     curMat.normalMap.repeat.set(uvRepeat[0] * NORMAL_MAP_REPEAT, uvRepeat[1] * NORMAL_MAP_REPEAT);
     curMat.normalMap.needsUpdate = true;
 
-    const frontFaceMesh = new Mesh(frontFaceGeometry, curMat);
+    const frontFaceMesh = Track(new Mesh(frontFaceGeometry, curMat));
     frontFaceMesh.position.z = 0;
     frontFaceMesh.position.y = 300;
     frontFaceMesh.position.y = -BOX_HEIGHT / 2 + THICKNESS;
@@ -255,8 +262,8 @@ export async function createTetris() {
     addTickMotionFunctionOnObjects(beveledMesh, frontFaceMesh);
   });
 
-  const sphereGeo = new SphereGeometry(1, 5, 5);
-  const centerSphere = new Mesh(sphereGeo, mat1);
+  const sphereGeo = Track(new SphereGeometry(1, 5, 5));
+  const centerSphere = Track(new Mesh(sphereGeo, mat1));
 
   return [centerSphere, ...totalMeshes];
 }
