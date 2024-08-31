@@ -159,8 +159,12 @@ class _AssetsTrackerLoaderClass extends Singleton {
     return this.allLoadsPromise;
   }
 
-  loadArray(loader, urls) {
-    urls.forEach(url => this.addLoad(loader, url));
+  addLoadArray(loader, urls, loadingManager = undefined) {
+    return Promise.all(urls.map(url => this.addLoad(loader, url, loadingManager)));
+  }
+
+  loadAsyncArray(loader, urls, loadingManager = undefined) {
+    return Promise.all(urls.map(url => this.addLoad(loader, url, loadingManager, true)));
   }
 
   track(object) {
