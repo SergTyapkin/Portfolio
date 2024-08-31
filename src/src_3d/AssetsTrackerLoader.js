@@ -154,7 +154,7 @@ class _AssetsTrackerLoaderClass extends Singleton {
   async startAllLoads() {
     console.log("START ALL", this.loadableObjects);
     this.loadableObjects.forEach((obj) => {
-      this.loadObject(obj);
+      this._loadObject(obj);
     });
     return this.allLoadsPromise;
   }
