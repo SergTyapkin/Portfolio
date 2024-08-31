@@ -14,7 +14,7 @@ import {isMobile} from "~/utils/utils";
 
 const Y_MOVEMENT_AMPLITUDE = 20;
 const SCROLL_SENSITIVE = 0.1;
-const DAMPING_FACTOR = isMobile() ? 0.3 : 0.1;
+const DAMPING_FACTOR = isMobile() ? 0.2 : 0.1;
 const DAMPING_FACTOR_DECREASING_ON_MOUSEOVER = 5;
 
 class MyControls {
