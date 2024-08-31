@@ -52,14 +52,22 @@ function AjaxTextureLoader(manager) {
 }
 
 
-class _Object {
+class _LoadableObject {
   object = undefined
   total = DEFAULT_SIZE;
+  loader = undefined;
+  url = undefined;
   loaded = 0;
   progress = 0;
   isLoaded = false;
+  resolvePromise = undefined;
+  rejectPromise = undefined;
 
-  constructor(object = undefined, total = DEFAULT_SIZE) {
+  constructor(loader, url, resolvePromise, rejectPromise, object = undefined, total = DEFAULT_SIZE) {
+    this.loader = loader;
+    this.url = url;
+    this.resolvePromise = resolvePromise;
+    this.rejectPromise = rejectPromise;
     this.object = object;
     this.total = total;
   }
@@ -70,9 +78,7 @@ class _Object {
     if (total !== undefined) {
       this.total = total;
     }
-    if (this.loaded >= this.total) {
-      this.isLoaded = true;
-    }
+    this.isLoaded = (this.loaded >= this.total);
     this.progress = this.loaded / this.total;
   }
   setFullyLoaded() {
@@ -81,46 +87,80 @@ class _Object {
 }
 
 class _AssetsTrackerLoaderClass extends Singleton {
-  loadedObjects = new Set(); // [_Object]
+  loadableObjects = new Set(); // [_Object]
   trackedObjects = new Set(); // [any disposable objects]
   totalSize = 0;
   totalLoaded = 0;
   totalProgress = 0;
+  allLoadsPromise = undefined;
+  _resolveAllLoadsPromise = undefined;
+  _rejectAllLoadsPromise = undefined;
 
   constructor() {
     super();
+    this.allLoadsPromise = new Promise((resolve, reject) => {
+      this._resolveAllLoadsPromise = resolve;
+      this._rejectAllLoadsPromise = reject;
+    });
   }
 
-  async load(loaderClass, url, loadingManager = undefined) {
+  async addLoad(loaderClass, url, loadingManager = undefined, _permanently = false) {
     if (loaderClass === TextureLoader) {
       loaderClass = AjaxTextureLoader;
     }
 
     const loaderInstance = new loaderClass(loadingManager);
     return new Promise( (resolve, reject) => {
-      const newObject = new _Object();
-      this.loadedObjects.add(newObject);
-      loaderInstance.load(
-        url,
-        (value) => {
-          newObject.setFullyLoaded();
-          newObject.object = value;
-          resolve(value);
-        },
-        ({loaded, total}) => {
-          newObject.setLoaded(loaded, total);
-          this._updateTotalLoadedProgress();
-        },
-        (value) => {
-          console.error(`Loader: Error when loading asset (url = ${url}, loader = ${loaderClass.name}, error = ${value}`)
-          reject(value);
-        },
-      );
+      const newObject = new _LoadableObject(loaderInstance, url, resolve, reject);
+      this.loadableObjects.add(newObject);
+      if (_permanently) {
+        this._loadObject(newObject);
+      }
     });
   }
 
+  async loadAsync(loaderClass, url, loadingManager = undefined) {
+    return this.addLoad(loaderClass, url, loadingManager, true);
+  }
+
+  async _loadObject(obj) {
+    obj.loader.load(
+      obj.url,
+      (value) => { // on load successfully finished
+        obj.setFullyLoaded();
+        obj.object = value;
+        obj.resolvePromise(value);
+
+        let isAllLoaded = true;
+        this.loadableObjects.forEach(obj => {
+          isAllLoaded = isAllLoaded && obj.isLoaded;
+        });
+        if (isAllLoaded) {
+          this._resolveAllLoadsPromise();
+        }
+      },
+      ({loaded, total}) => { // on load process
+        obj.setLoaded(loaded, total);
+        this._updateTotalLoadedProgress();
+      },
+      (value) => { // on load error
+        console.error(`Loader: Error when loading asset (url = ${url}, loader = ${typeof obj.loader}, error = ${value}`)
+        obj.rejectPromise(value);
+        this._rejectAllLoadsPromise();
+      },
+    );
+  }
+
+  async startAllLoads() {
+    console.log("START ALL", this.loadableObjects);
+    this.loadableObjects.forEach((obj) => {
+      this.loadObject(obj);
+    });
+    return this.allLoadsPromise;
+  }
+
   loadArray(loader, urls) {
-    urls.forEach(url => this.load(loader, url));
+    urls.forEach(url => this.addLoad(loader, url));
   }
 
   track(object) {
@@ -134,8 +174,8 @@ class _AssetsTrackerLoaderClass extends Singleton {
   }
 
   disposeAll() {
-    this.loadedObjects.forEach(obj => obj?.object?.dispose ? obj.object.dispose() : null);
-    this.loadedObjects.clear();
+    this.loadableObjects.forEach(obj => obj?.object?.dispose ? obj.object.dispose() : null);
+    this.loadableObjects.clear();
 
     this.trackedObjects.forEach(obj => obj?.dispose ? obj.dispose() : null);
     this.trackedObjects.clear();
@@ -147,14 +187,14 @@ class _AssetsTrackerLoaderClass extends Singleton {
 
   getObjects() {
     const objects = new Set();
-    this.loadedObjects.forEach(obj => objects.add(obj.object));
+    this.loadableObjects.forEach(obj => objects.add(obj.object));
     return objects;
   }
 
   _updateTotalLoadedProgress() {
     this.totalSize = 0;
     this.totalLoaded = 0;
-    this.loadedObjects.forEach(obj => {
+    this.loadableObjects.forEach(obj => {
       this.totalSize += obj.total;
       this.totalLoaded += obj.loaded;
     });
@@ -164,5 +204,6 @@ class _AssetsTrackerLoaderClass extends Singleton {
 
 const AssetsTrackerLoader = new _AssetsTrackerLoaderClass();
 export default AssetsTrackerLoader;
-export const Track = (...args) => AssetsTrackerLoader.track.call(AssetsTrackerLoader, ...args);
-export const Load = (...args) => AssetsTrackerLoader.load.call(AssetsTrackerLoader, ...args);
+export const TrackAsset = (...args) => AssetsTrackerLoader.track.call(AssetsTrackerLoader, ...args);
+export const AddLoad = (...args) => AssetsTrackerLoader.addLoad.call(AssetsTrackerLoader, ...args);
+export const Load = (...args) => AssetsTrackerLoader.loadAsync.call(AssetsTrackerLoader, ...args);
